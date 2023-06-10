@@ -3,18 +3,19 @@
   "input_file": null,
   "speaker": "beberry",
   "preprocess_dir": "./DATA/preprocess",
-  "training_dir":  "./DATA/training",
+  "training_dir":  "./DATA/training_ddsp",
   "dev_dir":  "./DATA/dev",
   "output_dir":  "./outputs/diff-svc_run_1",
 
   "skip_preliminary_preprocessing": true,
+  "pitch_extractor": "parselmouth",
+  "encoder": "contentvec768l12",
 
-  "model": "diff",
-
+  "model": "ddsp",
   "diff_config": "config_nsf.yaml",
   "diff_cuda": 11.6,
+  "ddsp_config": "combsub",
 
   "batch_size": 32,
-
   "debug": false
 }

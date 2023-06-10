@@ -29,9 +29,19 @@ SOVITZ_DIR = f'{MODELS_DIR}/so-vits-svc'
 RVC_DIR = f'{MODELS_DIR}/Retrieval-based-Voice-Conversion-WebUI'
 
 ### diff-svc specific paths (needs to be absolute)
-DIFF_VENV_PYTHON = os.path.abspath(f'{DIFF_DIR}/venv/bin/python')
-DIFF_CONFIG_YAML = os.path.abspath(f'{DIFF_DIR}/training/config.yaml')
-DIFF_CONFIG_NSF_YAML = os.path.abspath(f'{DIFF_DIR}/training/config_nsf.yaml')
+ABS_DIFF_DIR = os.path.abspath(DIFF_DIR)
+DIFF_VENV_PYTHON = os.path.join(ABS_DIFF_DIR, 'venv/bin/python')
+DIFF_CONFIG_YAML = os.path.join(ABS_DIFF_DIR, 'training/config.yaml')
+DIFF_CONFIG_NSF_YAML = os.path.join(ABS_DIFF_DIR, 'training/config_nsf.yaml')
+
+
+### ddsp-svc specific paths (needs to be absolute)
+ABS_DDSP_DIR = os.path.abspath(DDSP_DIR)
+DDSP_CONFIGS_DIR = os.path.join(ABS_DDSP_DIR, 'configs')
+DDSP_COMBSUB_CONFIG_YAML = os.path.join(DDSP_CONFIGS_DIR, 'combsub.yaml')
+DDSP_DIFFUSION_CONFIG_YAML = os.path.join(DDSP_CONFIGS_DIR, 'diffusion.yaml')
+
+
 
 
 PRETRAIN_DIR = './pretrain'
@@ -118,15 +128,18 @@ def update_yaml(config_fpath, update_dict):
 
     out_lines = []
     for line in f.readlines():
-      if not line.startswith(' '):
-        cur_scope = line
+      if not line.startswith(' ') and line.strip().endswith(':'):
+        cur_scope = line.strip()[:-1]
+
       lines = line.split(': ')
-      if len(lines) == 1:
+      if len(lines) == 1:  # scope will fall to this case
         out_lines.append(line)
       else:
         k, v = lines
-        if k in update_dict:
-          v = str(update_dict[k]) + '\n'
+        ks = k.strip()
+        ks_aug = f'{cur_scope}/{ks}'
+        if ks in update_dict or (cur_scope is not None and ks_aug in update_dict):
+          v = str(update_dict[ks_aug]) + '\n'
         out_lines.append(": ".join([k, v]))
 
     f.seek(0)

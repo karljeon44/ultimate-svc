@@ -11,7 +11,9 @@ Currently assumes all input data are relatively high-quality MR-removed vocals i
 import logging
 import os
 import re
+import shutil
 import subprocess
+import sys
 from datetime import datetime
 
 import librosa
@@ -116,6 +118,7 @@ def main():
 
   os.makedirs(output_dir, exist_ok=True)
 
+
   ### preliminary preprocessing
   if config.skip_preliminary_preprocessing:
     logger.info("Skipping preliminary preprocessing")
@@ -135,18 +138,58 @@ def main():
       'binary_data_dir': os.path.abspath(config.training_dir),
       'hubert_path': os.path.abspath(utils.HUBERT_SOFT_FPATH),
       'vocoder_ckpt': os.path.abspath(utils.NSF_HIFIGAN_MODEL_FPATH),
-      'speaker_id': config.speaker
+      'speaker_id': config.speaker,
+      # 'pitch_extractor': config.pitch_extractor
     }
     utils.update_yaml(diff_config_fpath, update_dict)
 
-    # run binarizer
-    abs_diff_dir = os.path.abspath(utils.DIFF_DIR)
+    # run diff binarizer
     cmd = f"{utils.DIFF_VENV_PYTHON} preprocessing/binarize.py --config {diff_config_fpath}"
-    utils.run_cmd(cmd, cwd=abs_diff_dir, env={'PYTHONPATH': abs_diff_dir}, cuda_version=config.diff_cuda)
+    utils.run_cmd(cmd, cwd=utils.ABS_DIFF_DIR, env={'PYTHONPATH': utils.ABS_DIFF_DIR}, cuda_version=config.diff_cuda)
 
 
   elif model == utils.DDSP_SVC:
-    pass
+    # 0. copy from `preprocess_dir` to `training_dir`
+    # ddsp always looks for `audio` sub-folder, so cater to that
+    training_audio_dirpath = os.path.join(config.training_dir, 'audio')
+
+    # needs to start fresh, so delete any existing dir
+    if os.path.exists(training_audio_dirpath):
+      logger.info("Found existing dir at `%s`, will replace with a new one", training_audio_dirpath)
+      shutil.rmtree(training_audio_dirpath)
+    shutil.copytree(output_dir, training_audio_dirpath, dirs_exist_ok=True)
+
+    dev_audio_dirpath = os.path.join(config.dev_dir, 'audio')
+    if os.path.exists(dev_audio_dirpath):
+      logger.info("Found existing dir at `%s`, will replace with a new one", dev_audio_dirpath)
+      shutil.rmtree(dev_audio_dirpath)
+    os.makedirs(dev_audio_dirpath, exist_ok=True)
+
+    # 1. need to split dev with a separate `draw.py` call
+    abs_training_dir = os.path.abspath(training_audio_dirpath)
+    abs_dev_dir = os.path.abspath(dev_audio_dirpath)
+    cmd = f'{sys.executable} draw.py -t {abs_training_dir} -v {abs_dev_dir}'
+    utils.run_cmd(cmd, cwd=utils.ABS_DDSP_DIR)
+
+    # 2. main preprocessing
+    ddsp_config_fpath = utils.DDSP_DIFFUSION_CONFIG_YAML if 'diff' in config.ddsp_config else utils.DDSP_COMBSUB_CONFIG_YAML
+    encoder_fpath = utils.HUBERT_SOFT_FPATH if 'hubert' in config.encoder else utils.CONTENTVEC_FPATH
+
+    # update ddsp config
+    update_dict = {
+      'data/f0_extractor': config.pitch_extractor,
+      'data/encoder': config.encoder,
+      'data/encoder_ckpt': os.path.abspath(encoder_fpath),
+      'data/train_path': os.path.abspath(config.training_dir),
+      'data/valid_path': os.path.abspath(config.dev_dir),
+      'enhancer/ckpt': os.path.abspath(utils.NSF_HIFIGAN_MODEL_FPATH),
+    }
+    utils.update_yaml(ddsp_config_fpath, update_dict)
+
+    # run ddsp preprocessor
+    cmd = f"{sys.executable} preprocess.py -c  {ddsp_config_fpath}"
+    utils.run_cmd(cmd, cwd=utils.ABS_DDSP_DIR, env={'PYTHONPATH': utils.ABS_DDSP_DIR})
+
 
   elif model == utils.SOVITZ_SVC:
     pass
