@@ -44,6 +44,11 @@ DDSP_DIFFUSION_CONFIG_YAML = os.path.join(DDSP_CONFIGS_DIR, 'diffusion.yaml')
 
 
 
+### sovitz-svc specific paths (needs to be absolute)
+ABS_SOVITZ_DIR = os.path.abspath(SOVITZ_DIR)
+SOVITZ_CONFIGS_DIR = os.path.join(ABS_SOVITZ_DIR, 'configs')
+SOVITZ_CONFIG_JSON = os.path.join(SOVITZ_CONFIGS_DIR, 'config.json')
+
 
 PRETRAIN_DIR = './pretrain'
 CONTENTVEC_DIR = f'{PRETRAIN_DIR}/contentvec'
@@ -52,7 +57,10 @@ HUBERT_SOFT_DIR = f'{PRETRAIN_DIR}/hubert-soft'
 HUBERT_SOFT_FPATH = f'{HUBERT_SOFT_DIR}/hubert-soft-0d54a1f4.pt'
 NSF_HIFIGAN_DIR = f'{PRETRAIN_DIR}/nsf_hifigan'
 NSF_HIFIGAN_MODEL_FPATH = f'{PRETRAIN_DIR}/nsf_hifigan/model'
-
+SOVITZ_CHECKPOINTS_DIR = f'{PRETRAIN_DIR}/sovitz'
+# https://github.com/voicepaw/so-vits-svc-fork/blob/main/src/so_vits_svc_fork/preprocessing/config_templates/so-vits-svc-4.0v1.json
+SOVITZ_D_CHECKPOINT_FPATH =f'{SOVITZ_CHECKPOINTS_DIR}/D_320000.pth'
+SOVITZ_G_CHECKPOINT_FPATH =f'{SOVITZ_CHECKPOINTS_DIR}/G_320000.pth'
 
 ### config
 class Config:

@@ -16,6 +16,6 @@
   "diff_cuda": 11.6,
   "ddsp_config": "combsub",
 
-  "batch_size": 16,
+  "batch_size": 8,
   "debug": false
 }

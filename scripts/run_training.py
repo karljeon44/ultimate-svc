@@ -2,9 +2,11 @@
 # -*- coding: utf-8 -*-
 # Author: karljeon44
 # Date: 6/10/23 11:07 AM
+import json
 import logging
 import os
 import sys
+import shutil
 from datetime import datetime
 
 import utils
@@ -63,9 +65,50 @@ def main():
     }
     utils.update_yaml(ddsp_config_fpath, update_dict)
 
-    # run ddsp preprocessor
+    # run ddsp training
     cmd = f"{sys.executable} train.py -c  {ddsp_config_fpath}"
     utils.run_cmd(cmd, cwd=utils.ABS_DDSP_DIR, env={'PYTHONPATH': utils.ABS_DDSP_DIR})
+
+  elif model == utils.SOVITZ_SVC:
+    # 0. copy model checkpoints
+
+    d_ckpt_fname = os.path.basename(utils.SOVITZ_D_CHECKPOINT_FPATH)
+    g_ckpt_fname = os.path.basename(utils.SOVITZ_G_CHECKPOINT_FPATH)
+
+    # tmp folder containing model results
+    tmp_dir = os.path.join(utils.ABS_SOVITZ_DIR, 'logs/tmp')
+    os.makedirs(tmp_dir, exist_ok=True)
+
+    d_ckpt_fpath = os.path.join(tmp_dir, d_ckpt_fname)
+    if not os.path.exists(d_ckpt_fpath):
+      shutil.copyfile(utils.SOVITZ_D_CHECKPOINT_FPATH, d_ckpt_fpath)
+
+    g_ckpt_fpath = os.path.join(tmp_dir, g_ckpt_fname)
+    if not os.path.exists(g_ckpt_fpath):
+      shutil.copyfile(utils.SOVITZ_G_CHECKPOINT_FPATH, g_ckpt_fpath)
+
+    sovitz_config_fpath = utils.SOVITZ_CONFIG_JSON
+    with open(sovitz_config_fpath) as f:
+      sovitz_config = json.load(f)
+
+    updated = False
+    for k,v in sovitz_config.items():
+      for kk,vv in v.items():
+        if kk == 'batch_size' and config.batch_size != vv:
+          sovitz_config[k][kk] = config.batch_size
+          updated = True
+
+    if updated:
+      with open(sovitz_config_fpath, 'w') as f:
+        json.dump(sovitz_config, f, indent=4)
+
+    # run soivitz training
+    cmd = f"{sys.executable} train.py -c  {sovitz_config_fpath} -m tmp"
+    utils.run_cmd(cmd, cwd=utils.ABS_SOVITZ_DIR, env={'PYTHONPATH': utils.ABS_SOVITZ_DIR})
+
+    # now move `tmp` folder back to the project root level
+    logger.info("Done. Moving model dir to `%s`", config.output_dir)
+    shutil.move(tmp_dir, config.output_dir)
 
   else:
     raise NotImplementedError()
