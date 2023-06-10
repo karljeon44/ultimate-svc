@@ -1,0 +1,13 @@
+{
+  "input_dir": "../../DATA/BEBERRY/무반주/mods/",
+  "input_file": null,
+  "preprocess_dir": "./DATA/preprocess",
+  "training_dir":  "./DATA/training",
+  "dev_dir":  "./DATA/dev",
+  "output_dir":  "./outputs",
+
+  "model": "diff",
+  "diff_config": "config_nsf.yaml",
+
+  "debug": false
+}
