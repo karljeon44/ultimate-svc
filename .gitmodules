@@ -4,3 +4,9 @@
 [submodule "models/DDSP-SVC"]
 	path = models/DDSP-SVC
 	url = https://github.com/yxlllc/DDSP-SVC
+[submodule "models/Diffusion-SVC"]
+	path = models/Diffusion-SVC
+	url = https://github.com/CNChTu/Diffusion-SVC
+[submodule "models/so-vits-svc"]
+	path = models/so-vits-svc
+	url = https://github.com/svc-develop-team/so-vits-svc

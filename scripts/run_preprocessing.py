@@ -112,10 +112,6 @@ def main():
     input_audio_fpaths = utils.load_wavs(config.input_dir)
     output_dir = config.preprocess_dir
 
-    with os.scandir(output_dir) as it:
-      if any(it) and not config.skip_preliminary_preprocessing:
-        logger.info("Preprocess Data dir (`%s`) isn't empty; some data may be overwritten")
-
   os.makedirs(output_dir, exist_ok=True)
 
 
@@ -123,6 +119,12 @@ def main():
   if config.skip_preliminary_preprocessing:
     logger.info("Skipping preliminary preprocessing")
   else:
+    with os.scandir(output_dir) as it:
+      if any(it):
+        logger.info("Found existing dir at `%s`, will replace with a new one", output_dir)
+        shutil.rmtree(output_dir)
+        os.makedirs(output_dir)
+
     for input_audio_fpath in tqdm.tqdm(input_audio_fpaths, desc='Preliminary Preprocessing'):
       preprocess(input_audio_fpath, output_dir)
 
@@ -159,13 +161,13 @@ def main():
     if os.path.exists(training_audio_dirpath):
       logger.info("Found existing dir at `%s`, will replace with a new one", training_audio_dirpath)
       shutil.rmtree(training_audio_dirpath)
-    shutil.copytree(output_dir, training_audio_dirpath, dirs_exist_ok=True)
+    shutil.copytree(output_dir, training_audio_dirpath)
 
     dev_audio_dirpath = os.path.join(config.dev_dir, 'audio')
     if os.path.exists(dev_audio_dirpath):
       logger.info("Found existing dir at `%s`, will replace with a new one", dev_audio_dirpath)
       shutil.rmtree(dev_audio_dirpath)
-    os.makedirs(dev_audio_dirpath, exist_ok=True)
+    os.makedirs(dev_audio_dirpath)
 
     # 1. need to split dev with a separate `draw.py` call
     abs_training_dir = os.path.abspath(training_audio_dirpath)
@@ -207,7 +209,47 @@ def main():
 
 
   elif model == utils.SOVITZ_SVC:
-    pass
+    # 0. configure speaker dirs
+    # sovitz always looks for speaker dir first, so cater to that
+    speaker = config.speaker
+    speaker_dirpath = os.path.join(config.training_dir, speaker)
+    if os.path.exists(speaker_dirpath):
+      logger.info("Found existing dir at `%s`, will replace with a new one", speaker_dirpath)
+      shutil.rmtree(speaker_dirpath)
+    shutil.copytree(output_dir, speaker_dirpath)
+
+    # 1. split datasets and generate config
+    if config.encoder.startswith('contentvec'):
+      config.encoder = config.encoder[7:]
+
+    abs_training_dirpath = os.path.abspath(config.training_dir)
+    source_dir_flag = f'--source_dir {abs_training_dirpath}'
+    encoder_flag = f'--speech_encoder {config.encoder}'
+    cmd = f'{sys.executable} preprocess_flist_config.py {source_dir_flag} {encoder_flag}'
+    utils.run_cmd(cmd, cwd=utils.SOVITZ_DIR, env={'PYTHONPATH': utils.SOVITZ_DIR})
+
+    # 2. run hubert encoder
+    # but first, update default paths for speech encoders
+    vencoder_dirpath = os.path.join(utils.SOVITZ_DIR, 'vencoder')
+    for encoder_option in ['contentvec', 'hubert-soft']:
+      if encoder_option == 'contentvec':
+        vencoder_fname = 'ContentVec768L12.py'
+        new_vec_path = os.path.abspath(utils.CONTENTVEC_FPATH)
+      else:
+        vencoder_fname = 'HubertSoft.py'
+        new_vec_path = os.path.abspath(utils.HUBERT_SOFT_FPATH)
+
+      vencoder_fpath = os.path.join(vencoder_dirpath, vencoder_fname)
+      with open(vencoder_fpath, 'r+') as f:
+        data = re.sub(r'"[^"]*.pt"', f'"{new_vec_path}"', f.read())
+        f.seek(0)
+        f.write(data)
+        f.truncate()
+
+    in_dir_flag = f'--in_dir {abs_training_dirpath}'
+    f0_predictor_flag = f'--f0_predictor {config.pitch_extractor}'
+    cmd = f'{sys.executable} preprocess_hubert_f0.py {in_dir_flag} {f0_predictor_flag}'
+    utils.run_cmd(cmd, cwd=utils.SOVITZ_DIR, env={'PYTHONPATH': utils.SOVITZ_DIR})
 
   else:
     pass

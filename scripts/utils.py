@@ -18,6 +18,7 @@ DEFAULT_CONFIG = f'{PROJECT_HOME}/configs/default.json'
 
 DIFF_SVC = 'diff'
 DDSP_SVC = 'ddsp'
+DDSP_DIFF_SVC = 'ddsp-diff'  # shallow diffusion, not yet implemented
 SOVITZ_SVC = 'sovitz'
 RVC = 'rvc'
 
