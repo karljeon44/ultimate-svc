@@ -1,3 +1,6 @@
 [submodule "models/diff-svc"]
 	path = models/diff-svc
 	url = https://github.com/prophesier/diff-svc
+[submodule "models/DDSP-SVC"]
+	path = models/DDSP-SVC
+	url = https://github.com/yxlllc/DDSP-SVC

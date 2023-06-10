@@ -109,14 +109,17 @@ def main():
     output_dir = config.preprocess_dir
 
     with os.scandir(output_dir) as it:
-      if any(it):
+      if any(it) and not config.skip_preliminary_preprocessing:
         logger.info("Preprocess Data dir (`%s`) isn't empty; some data may be overwritten")
 
   os.makedirs(output_dir, exist_ok=True)
 
   ### preliminary preprocessing
-  for input_audio_fpath in tqdm.tqdm(input_audio_fpaths, desc='Preliminary Preprocessing'):
-    preprocess(input_audio_fpath, output_dir)
+  if config.skip_preliminary_preprocessing:
+    logger.info("Skipping preliminary preprocessing")
+  else:
+    for input_audio_fpath in tqdm.tqdm(input_audio_fpaths, desc='Preliminary Preprocessing'):
+      preprocess(input_audio_fpath, output_dir)
 
 
   ### model-specific preprocessing

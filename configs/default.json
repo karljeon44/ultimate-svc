@@ -10,6 +10,7 @@
   "model": "diff",
   "diff_config": "config_nsf.yaml",
   "diff_cuda": 11.3,
+  "skip_preliminary_preprocessing": false,
 
   "batch_size": 32,
 
