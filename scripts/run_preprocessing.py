@@ -13,7 +13,6 @@ import os
 import re
 import subprocess
 import sys
-from datetime import datetime
 
 import librosa
 import numpy as np
@@ -99,10 +98,7 @@ def preprocess(input_fpath, output_dir, sample_rate=44100):
 def main():
   ### setup
   config = utils.init_config(name='ult-svc Preprocessing')
-  utils.init_logging(debug=config.debug)
-  logger.info("ult-svc Preprocessing started at %s", datetime.now())
-  config.display()
-  os.makedirs(config.output_dir, exist_ok=True)
+  utils.init_logging(config)
 
   if config.input_file is not None:
     input_audio_fpaths = [config.input_file]
@@ -116,54 +112,56 @@ def main():
       if any(it):
         logger.info("Preprocess Data dir (`%s`) isn't empty; some data may be overwritten")
 
+  os.makedirs(output_dir, exist_ok=True)
 
-  # ### preliminary preprocessing
-  # for input_audio_fpath in tqdm.tqdm(input_audio_fpaths, desc='Preliminary Preprocessing'):
-  #   preprocess(input_audio_fpath, output_dir)
+  ### preliminary preprocessing
+  for input_audio_fpath in tqdm.tqdm(input_audio_fpaths, desc='Preliminary Preprocessing'):
+    preprocess(input_audio_fpath, output_dir)
 
 
   ### model-specific preprocessing
   model = config.model
   if model == utils.DIFF_SVC:
-    assert os.path.exists(utils.DIFF_DIR)
-    diff_config_fpath = os.path.join(utils.DIFF_DIR, 'training', config.diff_config)
+    diff_config_fpath = utils.DIFF_CONFIG_NSF_YAML if 'nsf' in config.diff_config else utils.DIFF_CONFIG_YAML
 
     # update diff config
-    with open(diff_config_fpath, 'r+') as f:
-      out_lines = []
-      for line in f.readlines():
-        lines = line.split(': ')
-        if len(lines) == 1:
-          out_lines.append(line)
-        else:
-          k,v = lines
-          if k == 'raw_data_dir':
-            v = os.path.abspath(output_dir) + '\n'
-          elif k == 'binary_data_dir':
-            v = os.path.abspath(config.training_dir) + '\n'
-          elif k == 'hubert_path':
-            v = os.path.abspath(utils.HUBERT_SOFT_FPATH) + '\n'
-          elif k == 'vocoder_ckpt':
-            v = os.path.abspath(utils.NSF_HIFIGAN_MODEL_FPATH) + '\n'
-          elif k == 'speaker_id':
-            v = 'beberry\n'
-          out_lines.append(": ".join([k,v]))
-
-      f.seek(0)
-      f.write("".join(out_lines))
-      f.truncate()
+    update_dict = {
+      'raw_data_dir': os.path.abspath(output_dir),
+      'binary_data_dir': os.path.abspath(config.training_dir),
+      'hubert_path': os.path.abspath(utils.HUBERT_SOFT_FPATH),
+      'vocoder_ckpt': os.path.abspath(utils.NSF_HIFIGAN_MODEL_FPATH),
+      'speaker_id': config.speaker
+    }
+    utils.update_yaml(diff_config_fpath, update_dict)
+    # with open(diff_config_fpath, 'r+') as f:
+    #   out_lines = []
+    #   for line in f.readlines():
+    #     lines = line.split(': ')
+    #     if len(lines) == 1:
+    #       out_lines.append(line)
+    #     else:
+    #       k,v = lines
+    #       if k == 'raw_data_dir':
+    #         v = os.path.abspath(output_dir) + '\n'
+    #       elif k == 'binary_data_dir':
+    #         v = os.path.abspath(config.training_dir) + '\n'
+    #       elif k == 'hubert_path':
+    #         v = os.path.abspath(utils.HUBERT_SOFT_FPATH) + '\n'
+    #       elif k == 'vocoder_ckpt':
+    #         v = os.path.abspath(utils.NSF_HIFIGAN_MODEL_FPATH) + '\n'
+    #       elif k == 'speaker_id':
+    #         v = f'{config.speaker}\n'
+    #       out_lines.append(": ".join([k,v]))
+    #
+    #   f.seek(0)
+    #   f.write("".join(out_lines))
+    #   f.truncate()
 
     # run binarizer
     abs_diff_dir = os.path.abspath(utils.DIFF_DIR)
-    # cmd = f"{os.path.join(abs_diff_dir, 'venv/bin/python')} preprocessing/binarize.py --config training/config_nsf.yaml"
-    cmd = f"{os.path.join(abs_diff_dir, 'venv/bin/python')} preprocessing/binarize.py --config training/config_nsf.yaml"
-    logger.info("Running diff-svc preprocessing with cmd: `%s`", cmd)
-    env = {
-      'PATH': 'PATH=/usr/local/cuda-11.7/bin${PATH:+:${PATH}}',
-      'LD_LIBRARY_PATH': '/usr/local/cuda-11.7/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}',
-      'PYTHONPATH': abs_diff_dir
-    }
-    subprocess.check_call(cmd.split(), cwd=abs_diff_dir, env=env)
+    cmd = f"{utils.DIFF_VENV_PYTHON} preprocessing/binarize.py --config {diff_config_fpath}"
+    utils.run_cmd(cmd, cwd=abs_diff_dir, env={'PYTHONPATH': abs_diff_dir}, cuda_version=config.diff_cuda)
+
 
   elif model == utils.DDSP_SVC:
     pass
