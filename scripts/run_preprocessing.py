@@ -12,7 +12,7 @@ import logging
 import os
 import re
 import subprocess
-import sys
+from datetime import datetime
 
 import librosa
 import numpy as np
@@ -100,6 +100,8 @@ def main():
   config = utils.init_config(name='ult-svc Preprocessing')
   utils.init_logging(config)
 
+  logger.info("%s started at %s", config.name, datetime.now())
+
   if config.input_file is not None:
     input_audio_fpaths = [config.input_file]
     output_dir = config.output_dir
@@ -136,29 +138,6 @@ def main():
       'speaker_id': config.speaker
     }
     utils.update_yaml(diff_config_fpath, update_dict)
-    # with open(diff_config_fpath, 'r+') as f:
-    #   out_lines = []
-    #   for line in f.readlines():
-    #     lines = line.split(': ')
-    #     if len(lines) == 1:
-    #       out_lines.append(line)
-    #     else:
-    #       k,v = lines
-    #       if k == 'raw_data_dir':
-    #         v = os.path.abspath(output_dir) + '\n'
-    #       elif k == 'binary_data_dir':
-    #         v = os.path.abspath(config.training_dir) + '\n'
-    #       elif k == 'hubert_path':
-    #         v = os.path.abspath(utils.HUBERT_SOFT_FPATH) + '\n'
-    #       elif k == 'vocoder_ckpt':
-    #         v = os.path.abspath(utils.NSF_HIFIGAN_MODEL_FPATH) + '\n'
-    #       elif k == 'speaker_id':
-    #         v = f'{config.speaker}\n'
-    #       out_lines.append(": ".join([k,v]))
-    #
-    #   f.seek(0)
-    #   f.write("".join(out_lines))
-    #   f.truncate()
 
     # run binarizer
     abs_diff_dir = os.path.abspath(utils.DIFF_DIR)
@@ -175,7 +154,7 @@ def main():
   else:
     pass
 
-  logger.info("ult-svc Preprocessing finished at %s", datetime.now())
+  logger.info("%s finished at %s", config.name, datetime.now())
 
 if __name__ == '__main__':
   main()

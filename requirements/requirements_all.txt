@@ -4,6 +4,7 @@ SoundFile
 tqdm
 torchcrepe
 pydub
+pyworld
 pyyaml
 h5py
 einops

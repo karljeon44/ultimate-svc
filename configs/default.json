@@ -7,10 +7,12 @@
   "dev_dir":  "./DATA/dev",
   "output_dir":  "./outputs/diff-svc_run_1",
 
+  "skip_preliminary_preprocessing": true,
+
   "model": "diff",
+
   "diff_config": "config_nsf.yaml",
-  "diff_cuda": 11.3,
-  "skip_preliminary_preprocessing": false,
+  "diff_cuda": 11.6,
 
   "batch_size": 32,
 

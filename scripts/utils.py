@@ -108,15 +108,18 @@ def init_logging(config):
     format="[%(asctime)s][%(name)s][%(levelname)s]%(message)s",
     datefmt='%Y-%m-%d %H:%M:%S'
   )
-  logger.info("%s started at %s", config.name, datetime.now())
   config.display()
 
 
 def update_yaml(config_fpath, update_dict):
   # update diff config
   with open(config_fpath, 'r+') as f:
+    cur_scope = None
+
     out_lines = []
     for line in f.readlines():
+      if not line.startswith(' '):
+        cur_scope = line
       lines = line.split(': ')
       if len(lines) == 1:
         out_lines.append(line)

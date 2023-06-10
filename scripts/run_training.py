@@ -4,6 +4,7 @@
 # Date: 6/10/23 11:07 AM
 import logging
 import os
+from datetime import datetime
 
 import utils
 
@@ -15,6 +16,8 @@ def main():
   config = utils.init_config(name='ult-svc Training')
   utils.init_logging(config)
   os.makedirs(config.output_dir, exist_ok=True)
+
+  logger.info("%s started at %s", config.name, datetime.now())
 
   ### call training
   model = config.model
@@ -43,6 +46,7 @@ def main():
   else:
     raise NotImplementedError()
 
+  logger.info("%s finished at %s", config.name, datetime.now())
 
 if __name__ == '__main__':
   main()
