@@ -4,8 +4,8 @@
   "speaker": "beberry",
   "preprocess_dir": "./DATA/preprocess",
   "training_dir":  "./DATA/training_ddsp",
-  "dev_dir":  "./DATA/dev",
-  "output_dir":  "./outputs/diff-svc_run_1",
+  "dev_dir":  "./DATA/dev_ddsp",
+  "output_dir":  "./outputs/ddsp-svc_run_1",
 
   "skip_preliminary_preprocessing": true,
   "pitch_extractor": "parselmouth",
@@ -16,6 +16,6 @@
   "diff_cuda": 11.6,
   "ddsp_config": "combsub",
 
-  "batch_size": 32,
+  "batch_size": 16,
   "debug": false
 }

@@ -147,6 +147,8 @@ def main():
     cmd = f"{utils.DIFF_VENV_PYTHON} preprocessing/binarize.py --config {diff_config_fpath}"
     utils.run_cmd(cmd, cwd=utils.ABS_DIFF_DIR, env={'PYTHONPATH': utils.ABS_DIFF_DIR}, cuda_version=config.diff_cuda)
 
+    logger.info("Preprocessed TRAINING files located at `%s`", config.training_dir)
+    logger.info("Preprocessed DEV files located at `%s`", config.dev_dir)
 
   elif model == utils.DDSP_SVC:
     # 0. copy from `preprocess_dir` to `training_dir`
@@ -188,7 +190,20 @@ def main():
 
     # run ddsp preprocessor
     cmd = f"{sys.executable} preprocess.py -c  {ddsp_config_fpath}"
+    # env = os.environ.copy()
+    # env['PYTHONPATH']  = utils.ABS_DDSP_DIR
+    # env['PYTORCH_KERNEL_CACHE_PATH'] = os.path.join(os.path.expanduser('~'), '.cache/torch')
+    # env = {
+    #   : ,
+    #   # 'PYTORCH_KERNEL_CACHE_PATH': os.path.join(os.path.expanduser('~'), '.cache/torch')
+    # }
+    # TODO:
+    #  UserWarning: No PYTORCH_KERNEL_CACHE_PATH or HOME environment variable set! This disables kernel caching.
+    #  (Triggered internally at ../aten/src/ATen/native/cuda/jit_utils.cpp:1426.)
     utils.run_cmd(cmd, cwd=utils.ABS_DDSP_DIR, env={'PYTHONPATH': utils.ABS_DDSP_DIR})
+
+    logger.info("Preprocessed TRAINING files located at `%s`", training_audio_dirpath)
+    logger.info("Preprocessed DEV files located at `%s`", dev_audio_dirpath)
 
 
   elif model == utils.SOVITZ_SVC:
@@ -197,6 +212,7 @@ def main():
   else:
     pass
 
+  logger.info("[!] You DO NOT need to change data paths when training!")
   logger.info("%s finished at %s", config.name, datetime.now())
 
 if __name__ == '__main__':
