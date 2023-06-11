@@ -43,7 +43,6 @@ DDSP_COMBSUB_CONFIG_YAML = os.path.join(DDSP_CONFIGS_DIR, 'combsub.yaml')
 DDSP_DIFFUSION_CONFIG_YAML = os.path.join(DDSP_CONFIGS_DIR, 'diffusion.yaml')
 
 
-
 ### sovitz-svc specific paths (needs to be absolute)
 ABS_SOVITZ_DIR = os.path.abspath(SOVITZ_DIR)
 SOVITZ_CONFIGS_DIR = os.path.join(ABS_SOVITZ_DIR, 'configs')

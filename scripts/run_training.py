@@ -19,7 +19,6 @@ def main():
   config = utils.init_config(name='ult-svc Training')
   utils.init_logging(config)
   os.makedirs(config.output_dir, exist_ok=True)
-
   logger.info("%s started at %s", config.name, datetime.now())
 
   ### call training
@@ -44,8 +43,12 @@ def main():
     # run diff training
     abs_diff_dir = os.path.abspath(utils.DIFF_DIR)
 
-    cmd = f"{utils.DIFF_VENV_PYTHON} run.py --config {diff_config_fpath} --exp_name {exp_name} --reset"
-    utils.run_cmd(cmd, cwd=abs_diff_dir, env={'PYTHONPATH': abs_diff_dir}, cuda_version=config.diff_cuda)
+    try:
+      cmd = f"{utils.DIFF_VENV_PYTHON} run.py --config {diff_config_fpath} --exp_name {exp_name} --reset"
+      utils.run_cmd(cmd, cwd=abs_diff_dir, env={'PYTHONPATH': abs_diff_dir}, cuda_version=config.diff_cuda)
+    except KeyboardInterrupt: # catch ctrl+c
+      logger.info("Caught exit signal, terminating training immediately")
+      pass
 
   elif model == utils.DDSP_SVC:
     ddsp_config_fpath = utils.DDSP_DIFFUSION_CONFIG_YAML if 'diff' in config.ddsp_config else utils.DDSP_COMBSUB_CONFIG_YAML
@@ -66,12 +69,15 @@ def main():
     utils.update_yaml(ddsp_config_fpath, update_dict)
 
     # run ddsp training
-    cmd = f"{sys.executable} train.py -c  {ddsp_config_fpath}"
-    utils.run_cmd(cmd, cwd=utils.ABS_DDSP_DIR, env={'PYTHONPATH': utils.ABS_DDSP_DIR})
+    try:
+      cmd = f"{sys.executable} train.py -c  {ddsp_config_fpath}"
+      utils.run_cmd(cmd, cwd=utils.ABS_DDSP_DIR, env={'PYTHONPATH': utils.ABS_DDSP_DIR})
+    except KeyboardInterrupt: # catch ctrl+c
+      logger.info("Caught exit signal, terminating training immediately")
+      pass
 
   elif model == utils.SOVITZ_SVC:
     # 0. copy model checkpoints
-
     d_ckpt_fname = os.path.basename(utils.SOVITZ_D_CHECKPOINT_FPATH)
     g_ckpt_fname = os.path.basename(utils.SOVITZ_G_CHECKPOINT_FPATH)
 
@@ -103,12 +109,17 @@ def main():
         json.dump(sovitz_config, f, indent=4)
 
     # run soivitz training
-    cmd = f"{sys.executable} train.py -c  {sovitz_config_fpath} -m tmp"
-    utils.run_cmd(cmd, cwd=utils.ABS_SOVITZ_DIR, env={'PYTHONPATH': utils.ABS_SOVITZ_DIR})
+    try:
+      cmd = f"{sys.executable} train.py -c  {sovitz_config_fpath} -m tmp"
+      utils.run_cmd(cmd, cwd=utils.ABS_SOVITZ_DIR, env={'PYTHONPATH': utils.ABS_SOVITZ_DIR})
+    except KeyboardInterrupt: # catch ctrl+c
+      logger.info("Caught exit signal, terminating training immediately")
+      pass
 
     # now move `tmp` folder back to the project root level
-    logger.info("Done. Moving model dir to `%s`", config.output_dir)
-    shutil.move(tmp_dir, config.output_dir)
+    logger.info("Storing model outputs to `%s`", config.output_dir)
+    for fname in os.listdir(tmp_dir):
+      shutil.move(os.path.join(tmp_dir, fname), config.output_dir)
 
   else:
     raise NotImplementedError()
