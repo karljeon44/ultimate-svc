@@ -122,3 +122,5 @@ $ python scripts/run_inference.py
 ## 5. Future
 
 
+## DISCLAIMER
+프리아 베베리 기획의 ai 히든싱어 컨텐츠 (가제: 프든싱어) 지원용 팬메이드 프로그램입니다.
