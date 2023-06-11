@@ -7,7 +7,6 @@ import json
 import logging
 import os
 import subprocess
-from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -18,16 +17,16 @@ DEFAULT_CONFIG = f'{PROJECT_HOME}/configs/default.json'
 
 DIFF_SVC = 'diff'
 DDSP_SVC = 'ddsp'
-DDSP_DIFF_SVC = 'ddsp-diff'  # shallow diffusion, not yet implemented
 SOVITZ_SVC = 'sovitz'
-RVC = 'rvc'
+SHALLOW_DIFF_SVC = 'shallow-diff'
 
 ### default dirs
 MODELS_DIR = './models'
 DIFF_DIR = f'{MODELS_DIR}/diff-svc'
 DDSP_DIR = f'{MODELS_DIR}/DDSP-SVC'
 SOVITZ_DIR = f'{MODELS_DIR}/so-vits-svc'
-RVC_DIR = f'{MODELS_DIR}/Retrieval-based-Voice-Conversion-WebUI'
+SHALLOW_DIFF_DIR = f'{MODELS_DIR}/Diffusion-SVC'
+
 
 ### diff-svc specific paths (needs to be absolute)
 ABS_DIFF_DIR = os.path.abspath(DIFF_DIR)
@@ -40,13 +39,17 @@ DIFF_CONFIG_NSF_YAML = os.path.join(ABS_DIFF_DIR, 'training/config_nsf.yaml')
 ABS_DDSP_DIR = os.path.abspath(DDSP_DIR)
 DDSP_CONFIGS_DIR = os.path.join(ABS_DDSP_DIR, 'configs')
 DDSP_COMBSUB_CONFIG_YAML = os.path.join(DDSP_CONFIGS_DIR, 'combsub.yaml')
-DDSP_DIFFUSION_CONFIG_YAML = os.path.join(DDSP_CONFIGS_DIR, 'diffusion.yaml')
+DDSP_DIFFUSION_CONFIG_YAML = os.path.join(DDSP_CONFIGS_DIR, 'diffusion.yaml')  # don't use this; just use `shallow-diff`
 
 
 ### sovitz-svc specific paths (needs to be absolute)
 ABS_SOVITZ_DIR = os.path.abspath(SOVITZ_DIR)
-SOVITZ_CONFIGS_DIR = os.path.join(ABS_SOVITZ_DIR, 'configs')
-SOVITZ_CONFIG_JSON = os.path.join(SOVITZ_CONFIGS_DIR, 'config.json')
+SOVITZ_CONFIG_JSON = os.path.join(ABS_SOVITZ_DIR, 'configs/config.json')
+
+
+### shallow-diff-svc specific paths (needs to be absolute)
+ABS_SHALLOW_DIFF_DIR = os.path.abspath(SHALLOW_DIFF_DIR)
+SHALLOW_DIFF_CONFIG_YAML = os.path.join(ABS_SHALLOW_DIFF_DIR, 'configs/config.yaml')
 
 
 PRETRAIN_DIR = './pretrain'

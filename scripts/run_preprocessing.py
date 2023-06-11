@@ -123,9 +123,7 @@ def main():
   else:
     with os.scandir(output_dir) as it:
       if any(it):
-        logger.info("Found existing dir at `%s`, will replace with a new one", output_dir)
-        shutil.rmtree(output_dir)
-        os.makedirs(output_dir)
+        logger.info("Found existing dir at `%s`, some data may be overwritten", output_dir)
 
     for input_audio_fpath in tqdm.tqdm(input_audio_fpaths, desc='Preliminary Preprocessing'):
       preprocess(input_audio_fpath, output_dir, split_into_clips=split_into_clips)
@@ -155,7 +153,7 @@ def main():
       logger.info("Preprocessed TRAINING files located at `%s`", config.training_dir)
       logger.info("Preprocessed DEV files located at `%s`", config.dev_dir)
 
-    elif model == utils.DDSP_SVC:
+    elif model in [utils.DDSP_SVC, utils.SHALLOW_DIFF_SVC]:
       # 0. copy from `preprocess_dir` to `training_dir`
       # ddsp always looks for `audio` sub-folder, so cater to that
       training_audio_dirpath = os.path.join(config.training_dir, 'audio')
@@ -179,33 +177,56 @@ def main():
       utils.run_cmd(cmd, cwd=utils.ABS_DDSP_DIR)
 
       # 2. main preprocessing
-      ddsp_config_fpath = utils.DDSP_DIFFUSION_CONFIG_YAML if 'diff' in config.ddsp_config else utils.DDSP_COMBSUB_CONFIG_YAML
+      # common paths
       encoder_fpath = utils.HUBERT_SOFT_FPATH if 'hubert' in config.encoder else utils.CONTENTVEC_FPATH
+      encoder_ckpt = os.path.abspath(encoder_fpath)
+      train_path = os.path.abspath(config.training_dir)
+      valid_path = os.path.abspath(config.dev_dir)
+      enhancer_ckpt = os.path.abspath(utils.NSF_HIFIGAN_MODEL_FPATH)
 
-      # update ddsp config
-      update_dict = {
-        'data/f0_extractor': config.pitch_extractor,
-        'data/encoder': config.encoder,
-        'data/encoder_ckpt': os.path.abspath(encoder_fpath),
-        'data/train_path': os.path.abspath(config.training_dir),
-        'data/valid_path': os.path.abspath(config.dev_dir),
-        'enhancer/ckpt': os.path.abspath(utils.NSF_HIFIGAN_MODEL_FPATH),
-      }
-      utils.update_yaml(ddsp_config_fpath, update_dict)
+      if model == utils.DDSP_SVC:
+        ddsp_config_fpath = utils.DDSP_DIFFUSION_CONFIG_YAML if 'diff' in config.ddsp_config else utils.DDSP_COMBSUB_CONFIG_YAML
 
-      # run ddsp preprocessor
-      cmd = f"{sys.executable} preprocess.py -c  {ddsp_config_fpath}"
-      # env = os.environ.copy()
-      # env['PYTHONPATH']  = utils.ABS_DDSP_DIR
-      # env['PYTORCH_KERNEL_CACHE_PATH'] = os.path.join(os.path.expanduser('~'), '.cache/torch')
-      # env = {
-      #   : ,
-      #   # 'PYTORCH_KERNEL_CACHE_PATH': os.path.join(os.path.expanduser('~'), '.cache/torch')
-      # }
-      # TODO:
-      #  UserWarning: No PYTORCH_KERNEL_CACHE_PATH or HOME environment variable set! This disables kernel caching.
-      #  (Triggered internally at ../aten/src/ATen/native/cuda/jit_utils.cpp:1426.)
-      utils.run_cmd(cmd, cwd=utils.ABS_DDSP_DIR, env={'PYTHONPATH': utils.ABS_DDSP_DIR})
+        # update ddsp config
+        update_dict = {
+          'data/f0_extractor': config.pitch_extractor,
+          'data/encoder': config.encoder,
+          'data/encoder_ckpt': encoder_ckpt,
+          'data/train_path': train_path,
+          'data/valid_path': valid_path,
+          'enhancer/ckpt': enhancer_ckpt,
+        }
+        utils.update_yaml(ddsp_config_fpath, update_dict)
+
+        # run ddsp preprocessor
+        cmd = f"{sys.executable} preprocess.py -c  {ddsp_config_fpath}"
+        # env = os.environ.copy()
+        # env['PYTHONPATH']  = utils.ABS_DDSP_DIR
+        # env['PYTORCH_KERNEL_CACHE_PATH'] = os.path.join(os.path.expanduser('~'), '.cache/torch')
+        # env = {
+        #   : ,
+        #   # 'PYTORCH_KERNEL_CACHE_PATH': os.path.join(os.path.expanduser('~'), '.cache/torch')
+        # }
+        # TODO:
+        #  UserWarning: No PYTORCH_KERNEL_CACHE_PATH or HOME environment variable set! This disables kernel caching.
+        #  (Triggered internally at ../aten/src/ATen/native/cuda/jit_utils.cpp:1426.)
+        utils.run_cmd(cmd, cwd=utils.ABS_DDSP_DIR, env={'PYTHONPATH': utils.ABS_DDSP_DIR})
+
+      else:
+        # update shallow-diff config
+        update_dict = {
+          'data/f0_extractor': config.pitch_extractor,
+          'data/encoder': config.encoder,
+          'data/encoder_ckpt': encoder_ckpt,
+          'data/train_path': train_path,
+          'data/valid_path': valid_path,
+          'vocoder/ckpt': enhancer_ckpt,
+        }
+        utils.update_yaml(utils.SHALLOW_DIFF_CONFIG_YAML, update_dict)
+
+        # run shallow-diff preprocessor
+        cmd = f"{sys.executable} preprocess.py -c  {utils.SHALLOW_DIFF_CONFIG_YAML}"
+        utils.run_cmd(cmd, cwd=utils.ABS_SHALLOW_DIFF_DIR, env={'PYTHONPATH': utils.ABS_SHALLOW_DIFF_DIR})
 
       logger.info("Preprocessed TRAINING files located at `%s`", training_audio_dirpath)
       logger.info("Preprocessed DEV files located at `%s`", dev_audio_dirpath)
@@ -249,6 +270,7 @@ def main():
           f.write(data)
           f.truncate()
 
+      # now run hubert
       in_dir_flag = f'--in_dir {abs_training_dirpath}'
       f0_predictor_flag = f'--f0_predictor {config.pitch_extractor}'
       cmd = f'{sys.executable} preprocess_hubert_f0.py {in_dir_flag} {f0_predictor_flag}'

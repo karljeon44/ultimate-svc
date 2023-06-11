@@ -1,22 +1,27 @@
 {
   "input_dir": "./DATA/audio",
-  "input_file": null,
+  "input_file": "./outputs/ddsp-svc_run_1/yrh_verse_1.wav",
   "speaker": "beberry",
   "preprocess_dir": "./DATA/preprocess",
-  "training_dir":  "./DATA/training_sovitz",
-  "dev_dir":  "./DATA/dev_sovitz",
-  "output_dir":  "./outputs/sovitz-run_1",
-  "model_checkpoint": "./outputs/ddsp-svc_run_1/model_180000.pt",
+  "training_dir":  "./DATA/training_shallow_diff",
+  "dev_dir":  "./DATA/dev_shallow_diff",
+  "output_dir":  "./outputs/ddsp-svc_run_1",
+  "model_checkpoint": "./outputs/ddsp-svc_run_1/model_80000.pt",
+  "diff_checkpoint": "./outputs/shallow_diff-run_1/model_30000.pt",
 
   "skip_preliminary_preprocessing": false,
-  "pitch_extractor": "dio",
+  "pitch_extractor": "crepe",
   "encoder": "contentvec768l12",
+  "log_interval": 20,
+  "save_eval_interval": 1500,
+  "epochs": 10000,
 
-  "model": "sovitz",
+  "model": "ddsp",
   "diff_config": "config_nsf.yaml",
   "diff_cuda": 11.6,
   "ddsp_config": "combsub",
 
   "batch_size": 32,
+  "kstep": 100,
   "debug": false
 }

@@ -14,6 +14,14 @@ import utils
 logger = logging.getLogger(__name__)
 
 
+## TODO (June 10): sovitz training unstable
+##   UserWarning: Grad strides do not match bucket view strides. This may indicate grad
+##   was not created according to the gradient layout contract, or that the param's strides changed since DDP was constructed.  This is not an error, but may impair performance.
+##   grad.sizes() = [32, 1, 4], strides() = [4, 1, 1]
+##   bucket_view.sizes() = [32, 1, 4], strides() = [4, 4, 1] (Triggered internally at ../torch/csrc/distributed/c10d/reducer.cpp:323.)
+##   Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+
+
 def main():
   ### setup
   config = utils.init_config(name='ult-svc Training')
@@ -34,8 +42,11 @@ def main():
       'binary_data_dir': os.path.abspath(config.training_dir),
       'hubert_path': os.path.abspath(utils.HUBERT_SOFT_FPATH),
       'vocoder_ckpt': os.path.abspath(utils.NSF_HIFIGAN_MODEL_FPATH),
+      'max_epochs': config.epochs,
       "max_sentences": config.batch_size,
       'speaker_id': config.speaker,
+      'log_interval': config.log_interval,
+      'val_check_interval': config.save_eval_interval,
       'work_dir': work_dir,
     }
     utils.update_yaml(diff_config_fpath, update_dict)
@@ -50,30 +61,31 @@ def main():
       logger.info("Caught exit signal, terminating training immediately")
       pass
 
-  elif model == utils.DDSP_SVC:
-    ddsp_config_fpath = utils.DDSP_DIFFUSION_CONFIG_YAML if 'diff' in config.ddsp_config else utils.DDSP_COMBSUB_CONFIG_YAML
-    encoder_fpath = utils.HUBERT_SOFT_FPATH if 'hubert' in config.encoder else utils.CONTENTVEC_FPATH
+  elif model in [utils.DDSP_SVC, utils.SHALLOW_DIFF_SVC]:
+    if model == utils.DDSP_SVC:
+      config_fpath = utils.DDSP_COMBSUB_CONFIG_YAML
+      cwd = utils.ABS_DDSP_DIR
+    else:
+      config_fpath = utils.SHALLOW_DIFF_CONFIG_YAML
+      cwd = utils.ABS_SHALLOW_DIFF_DIR
 
     # update ddsp config
     update_dict = {
-      'data/f0_extractor': config.pitch_extractor,
-      'data/encoder': config.encoder,
-      'data/encoder_ckpt': os.path.abspath(encoder_fpath),
-      'data/train_path': os.path.abspath(config.training_dir),
-      'data/valid_path': os.path.abspath(config.dev_dir),
-      'enhancer/ckpt': os.path.abspath(utils.NSF_HIFIGAN_MODEL_FPATH),
       'env/expdir': os.path.abspath(config.output_dir),
       'train/batch_size': config.batch_size,
       'train/cache_device': 'cuda',
+      'train/epochs': config.epochs,
+      'train/interval_log': config.log_interval,
+      'train/interval_val': config.save_eval_interval
     }
-    utils.update_yaml(ddsp_config_fpath, update_dict)
+    utils.update_yaml(config_fpath, update_dict)
 
     # run ddsp training
+    cmd = f"{sys.executable} train.py -c  {config_fpath}"
     try:
-      cmd = f"{sys.executable} train.py -c  {ddsp_config_fpath}"
-      utils.run_cmd(cmd, cwd=utils.ABS_DDSP_DIR, env={'PYTHONPATH': utils.ABS_DDSP_DIR})
+      utils.run_cmd(cmd, cwd=cwd, env={'PYTHONPATH': cwd})
     except KeyboardInterrupt: # catch ctrl+c
-      logger.info("Caught exit signal, terminating training immediately")
+      logger.info("Caught exit signal, terminating immediately")
       pass
 
   elif model == utils.SOVITZ_SVC:
@@ -102,6 +114,15 @@ def main():
       for kk,vv in v.items():
         if kk == 'batch_size' and config.batch_size != vv:
           sovitz_config[k][kk] = config.batch_size
+          updated = True
+        if kk == 'epochs' and config.epochs != vv:
+          sovitz_config[k][kk] = config.epochs
+          updated = True
+        elif kk == 'log_interval' and config.log_interval != vv:
+          sovitz_config[k][kk] = config.log_interval
+          updated = True
+        elif kk == 'eval_interval' and config.save_eval_interval != vv:
+          sovitz_config[k][kk] = config.save_eval_interval
           updated = True
 
     if updated:

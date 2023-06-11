@@ -1,9 +1,12 @@
 # ultimate-svc
 a wrapper on top of 4 popular **SVC** (**Singing Voice Conversion**) models:
-1. [diff-svc](https://github.com/prophesier/diff-svc)
-2. [ddsp-svc](https://github.com/yxlllc/DDSP-SVC)
-3. [so-vitz-svc](https://github.com/svc-develop-team/so-vits-svc)
-4. [shallow-diff-svc](https://github.com/CNChTu/Diffusion-SVC)
+1. [diff-svc](https://github.com/prophesier/diff-svc) (diff)
+2. [ddsp-svc](https://github.com/yxlllc/DDSP-SVC) (ddsp)
+3. [so-vitz-svc](https://github.com/svc-develop-team/so-vits-svc) (sovitz)
+   * training currently unstable; may need to downgrade to v4.0 from v4.1 (current)
+4. [shallow-diff-svc](https://github.com/CNChTu/Diffusion-SVC) (shallow-diff)
+   * this model could be used in conjunction with `ddsp` and `sovitz` during inference
+   * preliminary observation indicates that `shallow-diff` stand-alone is more efficient and performs better than `diff-svc`
 
 not yet supported:
 * [rvc](https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI)
@@ -110,6 +113,7 @@ Consider updating following config fields:
 * `input_file`
 * `output_dir`
 * `model_checkpoint`
+* `diff_checkpoint` to combine specified model inference with shallow diffusion
 
 input data should be MR-removed wav file
 1. populate `input_file` field in config json
@@ -119,8 +123,45 @@ input data should be MR-removed wav file
 $ python scripts/run_inference.py 
 ```
 
-## 5. Future
+## 5. Preliminary Results
+
+### Data
+160 ~15s audio clips
+* Fria Beberry's MR-less vocals
+* see [here](https://github.com/karljeon44/BEBERRY_DATA)
+
+### Experiments
+* GCP A2 VM w/ A100 GPU
+
+![preliminary_training.png](assets/preliminary_training.png)
+
+### Results
+
+#### ddsp
+* at 80k step
+
+![ddsp](assets/yrh_verse_1_ddsp_80000.mp4)
+
+
+#### shallow-diff
+* at 30k step
+
+![shallow-diff](assets/yrh_verse_1_shallow-diff_30000.mp4)
+
+
+#### ddsp w/ shallow-diff
+* ddsp at 80k step
+* shallow-diff at 30k step
+* 300 k-step
+
+![ddsp-shallow-diff](assets/yrh_verse_1_ddsp_80000_shallow-diff_30000.mp4)
+
+  
+
+## 6. Future
 
 
 ## DISCLAIMER
-프리아 베베리 기획의 ai 히든싱어 컨텐츠 (가제: 프든싱어) 지원용 팬메이드 프로그램입니다.
+프리아 베베리 기획의 ai 히든싱어 컨텐츠 (가제: 프든싱어) 지원용 팬메이드 프로그램입니다. 사용함에 있어 따르는 어떠한 문제에 대해서도 책임을 지지 않습니다.
+
+This is a fan-made software for Fria Beberry's AI Hidden Singer content. Use it at your own risk.
