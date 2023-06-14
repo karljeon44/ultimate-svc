@@ -109,25 +109,28 @@ def main():
     with open(sovitz_config_fpath) as f:
       sovitz_config = json.load(f)
 
-    updated = False
     for k,v in sovitz_config.items():
       for kk,vv in v.items():
         if kk == 'batch_size' and config.batch_size != vv:
           sovitz_config[k][kk] = config.batch_size
-          updated = True
         if kk == 'epochs' and config.epochs != vv:
           sovitz_config[k][kk] = config.epochs
-          updated = True
         elif kk == 'log_interval' and config.log_interval != vv:
           sovitz_config[k][kk] = config.log_interval
-          updated = True
         elif kk == 'eval_interval' and config.save_eval_interval != vv:
           sovitz_config[k][kk] = config.save_eval_interval
-          updated = True
 
-    if updated:
-      with open(sovitz_config_fpath, 'w') as f:
-        json.dump(sovitz_config, f, indent=4)
+    if config.encoder == 'contentvec256l9':
+      sovitz_config['model']['speech_encoder'] = 'vec256l9'
+      sovitz_config['model']['ssl_dim'] = 256
+      sovitz_config['model']['gin_channels'] = 256
+    elif config.encoder == 'contentvec768l12':
+      sovitz_config['model']['speech_encoder'] = 'vec768l12'
+      sovitz_config['model']['ssl_dim'] = 768
+      sovitz_config['model']['gin_channels'] = 256
+
+    with open(sovitz_config_fpath, 'w') as f:
+      json.dump(sovitz_config, f, indent=4)
 
     # run soivitz training
     try:

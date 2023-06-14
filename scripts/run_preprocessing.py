@@ -255,9 +255,12 @@ def main():
       # 2. run hubert encoder
       # but first, update default paths for speech encoders
       vencoder_dirpath = os.path.join(utils.SOVITZ_DIR, 'vencoder')
-      for encoder_option in ['contentvec', 'hubert-soft']:
-        if encoder_option == 'contentvec':
+      for encoder_option in ['contentvec768l12', 'hubert-soft', 'contentvec256l9']:
+        if encoder_option == 'contentvec768l12':
           vencoder_fname = 'ContentVec768L12.py'
+          new_vec_path = os.path.abspath(utils.CONTENTVEC_FPATH)
+        elif encoder_option == 'contentvec256l9':
+          vencoder_fname = 'ContentVec256L9.py'
           new_vec_path = os.path.abspath(utils.CONTENTVEC_FPATH)
         else:
           vencoder_fname = 'HubertSoft.py'
