@@ -97,7 +97,6 @@ def main():
           if start is not None:
             if start == 0 and end is None:
               os.remove(clip_fpath)
-
               y, sr = librosa.load(clip_fpath, sr=None)
               y = np.concatenate((y[: round(sr * start)], y[round(sr * end):]), axis=None)
               soundfile.write(clip_fpath, y, samplerate=sr)

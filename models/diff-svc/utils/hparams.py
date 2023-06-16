@@ -20,7 +20,7 @@ def override_config(old_config: dict, new_config: dict):
             old_config[k] = v
 
 
-def set_hparams(config='', exp_name='', hparams_str='', print_hparams=True, global_hparams=True,reset=True,infer=True):
+def set_hparams(**unused):
     '''
         Load hparams from multiple sources:
         1. config chain (i.e. first load base_config, then load config);
@@ -28,25 +28,14 @@ def set_hparams(config='', exp_name='', hparams_str='', print_hparams=True, glob
            which contains all settings and do not rely on base_config;
         3. load from argument --hparams or hparams_str, as temporary modification.
     '''
-    if config == '':
-        parser = argparse.ArgumentParser(description='neural music')
-        parser.add_argument('--config', type=str, default='',
-                            help='location of the data corpus')
-        parser.add_argument('--exp_name', type=str, default='', help='exp_name')
-        parser.add_argument('--hparams', type=str, default='',
-                            help='location of the data corpus')
-        parser.add_argument('--infer', action='store_true', help='infer')
-        parser.add_argument('--validate', action='store_true', help='validate')
-        parser.add_argument('--reset', action='store_true', help='reset hparams')
-        parser.add_argument('--debug', action='store_true', help='debug')
-        args, unknown = parser.parse_known_args()
-    else:
-        args = Args(config=config, exp_name=exp_name, hparams=hparams_str,
-                    infer=infer, validate=False, reset=reset, debug=False)
-    args_work_dir = ''
-    if args.exp_name != '':
-        args.work_dir = args.exp_name
-        args_work_dir = f'checkpoints/{args.work_dir}'
+    parser = argparse.ArgumentParser(description='neural music')
+    parser.add_argument('--config', type=str, default='', help='location of the data corpus')
+    parser.add_argument('--exp_name', type=str, default='', help='exp_name')
+    parser.add_argument('--hparams', type=str, default='', help='location of the data corpus')
+    parser.add_argument('--validate', action='store_true', help='validate')
+    parser.add_argument('--reset', action='store_true', help='reset hparams')
+    parser.add_argument('--debug', action='store_true', help='debug')
+    args, unknown = parser.parse_known_args()
 
     config_chains = []
     loaded_config = set()
@@ -72,26 +61,12 @@ def set_hparams(config='', exp_name='', hparams_str='', print_hparams=True, glob
         return ret_hparams
 
     global hparams
-    assert args.config != '' or args_work_dir != ''
-    saved_hparams = {}
-    if args_work_dir != 'checkpoints/':
-        ckpt_config_path = f'{args_work_dir}/config.yaml'
-        if os.path.exists(ckpt_config_path):
-            try:
-                with open(ckpt_config_path, encoding='utf-8') as f:
-                    saved_hparams.update(yaml.safe_load(f))
-            except:
-                pass
-        if args.config == '':
-            args.config = ckpt_config_path
 
     hparams_ = {}
+    config =load_config(args.config)
+    hparams_.update(config)
 
-    hparams_.update(load_config(args.config))
-    
-    if not args.reset:
-        hparams_.update(saved_hparams)
-    hparams_['work_dir'] = args_work_dir
+    # hparams_['work_dir'] = args.
 
     if args.hparams != "":
         for new_hparam in args.hparams.split(","):
@@ -103,29 +78,24 @@ def set_hparams(config='', exp_name='', hparams_str='', print_hparams=True, glob
             else:
                 hparams_[k] = type(hparams_[k])(v)
 
-    if args_work_dir != '' and (not os.path.exists(ckpt_config_path) or args.reset) and not args.infer:
-        os.makedirs(hparams_['work_dir'], exist_ok=True)
-        with open(ckpt_config_path, 'w', encoding='utf-8') as f:
-            yaml.safe_dump(hparams_, f)
 
-    hparams_['infer'] = args.infer
     hparams_['debug'] = args.debug
     hparams_['validate'] = args.validate
     global global_print_hparams
-    if global_hparams:
-        hparams.clear()
-        hparams.update(hparams_)
+    hparams.clear()
+    hparams.update(hparams_)
 
-    if print_hparams and global_print_hparams and global_hparams:
-        print('| Hparams chains: ', config_chains)
-        print('| Hparams: ')
-        for i, (k, v) in enumerate(sorted(hparams_.items())):
-            print(f"\033[;33;m{k}\033[0m: {v}, ", end="\n" if i % 5 == 4 else "")
-        print("")
-        global_print_hparams = False
+    print('| Hparams chains: ', config_chains)
+    print('| Hparams: ')
+    for i, (k, v) in enumerate(sorted(hparams_.items())):
+        print(f"\033[;33;m{k}\033[0m: {v}, ", end="\n" if i % 5 == 4 else "")
+    print("")
+    global_print_hparams = False
+
     # print(hparams_.keys())
     if hparams.get('exp_name') is None:
         hparams['exp_name'] = args.exp_name
     if hparams_.get('exp_name') is None:
         hparams_['exp_name'] = args.exp_name
+
     return hparams_

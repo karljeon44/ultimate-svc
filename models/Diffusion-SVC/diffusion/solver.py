@@ -165,7 +165,6 @@ def train(args, initial_global_step, model, optimizer, scheduler, vocoder, loade
                         saver.global_step
                     )
                 )
-
                 saver.log_value({'train/loss': loss.item()})
                 saver.log_value({'train/lr': current_lr})
 

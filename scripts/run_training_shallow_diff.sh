@@ -16,4 +16,4 @@ echo "Activating shallow-diffusion venv.."
 . $SHALLOW_DIFF_HOME/venv/bin/activate
 which python
 
-PYTHONPATH=$SHALLOW_DIFF_HOME python $SHALLOW_DIFF_HOME/train.py -c configs/shallow-diff-config.yaml
+PYTHONPATH=$SHALLOW_DIFF_HOME python $SHALLOW_DIFF_HOME/train.py -c configs/shallow-diff.yaml
